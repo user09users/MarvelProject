@@ -1,129 +1,79 @@
-import { Component } from 'react';
-
-import MarvelService from '../../services/MarvelService';
+import {useState, useEffect} from 'react';
+import useMarvelService from '../../services/MarvelService';
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
-import Skeleton from '../skeleton/Skeleton';
 
-import './charInfo.scss';
+import './comicsList.scss';
 
-class CharInfo extends Component {
+const ComicsList = () => {
 
-    state = {
-        char: null,
-        loading: false,
-        error: false
+    const [comicsList, setComicsList] = useState([]);
+    const [newItemLoading, setnewItemLoading] = useState(false);
+    const [offset, setOffset] = useState(0);
+    const [comicsEnded, setComicsEnded] = useState(false);
+
+    const {loading, error, getAllComics} = useMarvelService();
+
+    useEffect(() => {
+        onRequest(offset, true);
+    }, [])
+
+    const onRequest = (offset, initial) => {
+        initial ? setnewItemLoading(false) : setnewItemLoading(true);
+        getAllComics(offset)
+            .then(onComicsListLoaded)
     }
 
-    marvelService = new MarvelService();
-
-    componentDidMount() {
-        this.updateChar();
-    }
-
-    componentDidUpdate(prevProps){
-        if (this.props.charId !== prevProps.charId) {
-            this.updateChar();
+    const onComicsListLoaded = (newComicsList) => {
+        let ended = false;
+        if (newComicsList.length < 8) {
+            ended = true;
         }
+        setComicsList([...comicsList, ...newComicsList]);
+        setnewItemLoading(false);
+        setOffset(offset + 8);
+        setComicsEnded(ended);
     }
 
-    updateChar = () => {
-        const {charId} = this.props;
-        if (!charId) {
-            return;
-        }
-
-        this.onCharLoading();
-
-        this.marvelService
-            .getCharacter(charId)
-            .then(this.onCharLoaded)
-            .catch(this.onError);
-    }
-
-    onCharLoaded = (char) => {
-        this.setState({
-            char, 
-            loading: false
+    function renderItems (arr) {
+        const items = arr.map((item, i) => {
+            return (
+                <li className="comics__item" key={i}>
+                    <a href="#">
+                        <img src={item.thumbnail} alt={item.title} className="comics__item-img"/>
+                        <div className="comics__item-name">{item.title}</div>
+                        <div className="comics__item-price">{item.price}</div>
+                    </a>
+                </li>
+            )
         })
-    }
-
-    onCharLoading = () => {
-        this.setState({
-            loading: true
-        })
-    }
-
-    onError = () => {
-        this.setState({
-            loading: false,
-            error: true
-        })
-    }
-
-    render() {
-        const {char, loading, error} = this.state;
-
-        const skeleton = char || loading || error ? null : <Skeleton/>;
-        const errorMessage = error ? <ErrorMessage/> : null;
-        const spinner = loading ? <Spinner/> : null;
-        const content = !(loading || error || !char) ? <View char={char}/> : null;
 
         return (
-            <div className="char__info">
-                {skeleton}
-                {errorMessage}
-                {spinner}
-                {content}
-            </div>
+            <ul className="comics__grid">
+                {items}
+            </ul>
         )
     }
-}
 
-const View = ({char}) => {
-    const {name, description, thumbnail, homepage, wiki, comics} = char;
+    const items = renderItems(comicsList);
 
-    let imgStyle = {'objectFit' : 'cover'};
-    if (thumbnail === 'http://i.annihil.us/u/prod/marvel/i/mg/b/40/image_not_available.jpg') {
-        imgStyle = {'objectFit' : 'contain'};
-    }
+    const errorMessage = error ? <ErrorMessage/> : null;
+    const spinner = loading && !newItemLoading ? <Spinner/> : null;
 
     return (
-        <>
-            <div className="char__basics">
-                <img src={thumbnail} alt={name} style={imgStyle}/>
-                <div>
-                    <div className="char__info-name">{name}</div>
-                    <div className="char__btns">
-                        <a href={homepage} className="button button__main">
-                            <div className="inner">homepage</div>
-                        </a>
-                        <a href={wiki} className="button button__secondary">
-                            <div className="inner">Wiki</div>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div className="char__descr">
-                {description}
-            </div>
-            <div className="char__comics">Comics:</div>
-            <ul className="char__comics-list">
-                {comics.length > 0 ? null : 'There is no comics with this character'}
-                {
-                    comics.map((item, i) => {
-                        // eslint-disable-next-line
-                        if (i > 9) return;
-                        return (
-                            <li key={i} className="char__comics-item">
-                                {item.name}
-                            </li>
-                        )
-                    })
-                }                
-            </ul>
-        </>
+        <div className="comics__list">
+            {errorMessage}
+            {spinner}
+            {items}
+            <button 
+                disabled={newItemLoading} 
+                style={{'display' : comicsEnded ? 'none' : 'block'}}
+                className="button button__main button__long"
+                onClick={() => onRequest(offset)}>
+                <div className="inner">load more</div>
+            </button>
+        </div>
     )
 }
 
-export default CharInfo;
+export default ComicsList;
