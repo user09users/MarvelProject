@@ -69,7 +69,7 @@ const ComicsList = () => {
                 disabled={newItemLoading} 
                 style={{'display' : comicsEnded ? 'none' : 'block'}}
                 className="button button__main button__long"
-                onClick={() => onRequest(offset)}>
+                onClick={() => onRequest(offset)}>ju
                 <div className="inner">load more</div>
             </button>
         </div>
