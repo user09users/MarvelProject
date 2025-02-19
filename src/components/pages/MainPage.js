@@ -16,16 +16,15 @@ const MainPage = () => {
     const onCharSelected = (id) => {
         setChar(id);
     }
-
     return (
         <>
-        <Helmet>
+            <Helmet>
                 <meta
                     name="description"
                     content="Marvel information portal"
                     />
-            <title>Marvel information portal</title>
-        </Helmet>
+                <title>Marvel information portal</title>
+            </Helmet>
             <ErrorBoundary>
                 <RandomChar/>
             </ErrorBoundary>
